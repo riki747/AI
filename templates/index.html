@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deteksi Emosi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="{{ url_for('static', filename='js/deteksi.js') }}"></script>
+
+</head>
+<body class="bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 min-h-screen flex items-center justify-center text-white">
+
+  <div class="text-center p-8 bg-white bg-opacity-10 rounded-xl shadow-xl backdrop-blur-md">
+    <h1 class="text-4xl font-bold mb-4">🎭 Deteksi Emosi Real-Time</h1>
+    <p class="mb-6 text-lg">Klik tombol di bawah untuk mulai atau hentikan deteksi wajah.</p>
+
+    <div class="space-x-4">
+      <button onclick="startDetection()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-300">
+        ▶️ Mulai Rekaman
+      </button>
+      <button onclick="stopDetection()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-300">
+        ⏹️ Stop Deteksi
+      </button>
+    </div>
+
+    <p id="status" class="mt-6 text-lg font-medium text-yellow-300"></p>
+  </div>
+
+</body>
+</html>
