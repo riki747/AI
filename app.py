@@ -17,13 +17,11 @@ def start_detection():
     except Exception as e:
         return f"Terjadi error: {e}", 500
 
-        
-@app.route('/stop', methods=['POST'])
+@app.route('/stop')
 def stop_detection():
     try:
-        # Hentikan deteksi wajah
         emotion_detector.stop_detection()
         return "Deteksi dihentikan."
     except Exception as e:
         return f"Terjadi error: {e}", 500
-    
+ 

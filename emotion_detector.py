@@ -6,13 +6,25 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 from voice_util import speak_emotion
 
-def run():
-    face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    model = load_model('D:\SEMESTER 4\AI\FD-Flask/fer2013_mini_XCEPTION.119-0.65.hdf5', compile=False)
-    EMOTIONS = ["Marah", "Jijik", "Takut", "Senang", "Sedih", "Terkejut", "Netral"]
+# ===== Global State =====
+cap = None
+running = False
+detection_thread = None
 
-    def speak_async(text):
-        threading.Thread(target=speak_emotion, args=(text,), daemon=True).start()
+# ===== Constants =====
+EMOTIONS = ["Marah", "Jijik", "Takut", "Senang", "Sedih", "Terkejut", "Netral"]
+model_path = r'D:\SEMESTER 4\AI\FD-Flask\fer2013_mini_XCEPTION.119-0.65.hdf5'
+
+# ===== Async Voice Thread =====
+def speak_async(text):
+    threading.Thread(target=speak_emotion, args=(text,), daemon=True).start()
+
+# ===== Main Detection Loop =====
+def run():
+    global cap, running
+
+    face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    model = load_model(model_path, compile=False)
 
     emotion_counters = {emotion: 0 for emotion in EMOTIONS}
     last_spoken_time = time.time()
@@ -21,9 +33,13 @@ def run():
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("Tidak dapat membuka webcam.")
+        running = False
         return
 
-    while True:
+    running = True
+    print("[INFO] Deteksi dimulai.")
+
+    while running:
         try:
             ret, frame = cap.read()
             if not ret:
@@ -90,3 +106,31 @@ def run():
 
     cap.release()
     cv2.destroyAllWindows()
+    running = False
+    print("[INFO] Deteksi dihentikan.")
+
+# ===== Start Detection in Thread =====
+def start_detection():
+    global detection_thread, running
+    if not running:
+        detection_thread = threading.Thread(target=run, daemon=True)
+        detection_thread.start()
+    else:
+        print("Deteksi sudah berjalan.")
+
+# ===== Stop Detection =====
+def stop_detection():
+    global running, cap
+    if running:
+        running = False
+        if cap is not None:
+            cap.release()
+        cv2.destroyAllWindows()
+        print("Deteksi dihentikan.")
+    else:
+        print("Tidak ada deteksi yang berjalan.")
+
+# ===== Get Status =====
+def is_running():
+    global running
+    return running
