@@ -5,22 +5,24 @@ import os
 
 def speak_emotion(text):
     try:
-        # Generate voice
         tts = gTTS(text=text, lang='id')
-        tts.save("temp_voice.mp3")
+        filename = "temp_voice.mp3"
+        tts.save(filename)
 
-        # Init mixer
         pygame.mixer.init()
-        pygame.mixer.music.load("temp_voice.mp3")
+        pygame.mixer.music.load(filename)
         pygame.mixer.music.play()
 
-        # Tunggu hingga selesai
         while pygame.mixer.music.get_busy():
             time.sleep(0.1)
 
-        pygame.mixer.music.unload()
+        pygame.mixer.music.stop()
         pygame.mixer.quit()
-        os.remove("temp_voice.mp3")
+
+        time.sleep(0.2)
+        if os.path.exists(filename):
+            os.remove(filename)
 
     except Exception as e:
         print("Gagal menghasilkan suara:", e)
+
