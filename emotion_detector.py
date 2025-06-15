@@ -6,19 +6,20 @@ from keras.models import load_model
 from keras.preprocessing.image import img_to_array
 from voice_util import speak_emotion
 
-# Load classifier dan model emosi
+# Load model dan face detector
 face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 model = load_model('fer2013_mini_XCEPTION.119-0.65.hdf5', compile=False)
 
-# Label emosi
 EMOTIONS = ["Marah", "Jijik", "Takut", "Senang", "Sedih", "Terkejut", "Netral"]
+is_running = False  # status global deteksi
 
-# Fungsi untuk memutar suara di thread terpisah
 def speak_async(text):
     threading.Thread(target=speak_emotion, args=(text,), daemon=True).start()
 
 def gen_frames():
+    global is_running
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+
     if not cap.isOpened():
         print("Tidak dapat membuka webcam.")
         return
@@ -29,6 +30,10 @@ def gen_frames():
     last_label = None
 
     while True:
+        if not is_running:
+            time.sleep(0.1)
+            continue
+
         ret, frame = cap.read()
         if not ret:
             break
@@ -49,21 +54,29 @@ def gen_frames():
             preds = model.predict(roi, verbose=0)[0]
             label = EMOTIONS[np.argmax(preds)]
 
-            # Gambar kotak & label
+            # Gambar kotak dan label
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 2)
             cv2.putText(frame, label, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
 
-            # Hitung konsistensi emosi
             for emo in EMOTIONS:
                 if emo == label:
                     emotion_counters[emo] += 1
                 else:
                     emotion_counters[emo] = 0
 
-            # Jika konsisten dan cukup jeda waktu, baru ucapkan
             if emotion_counters[label] >= 5 and (time.time() - last_spoken_time) > speak_delay:
                 if label != last_label:
-                    speak_async(f"Kamu terlihat {label.lower()}")
+                    # Suara dengan penyemangat
+                    messages = {
+                        "Sedih": "Semangat ya, kamu terlihat sedih.",
+                        "Senang": "Wah kamu terlihat senang sekali, bagus itu!",
+                        "Marah": "Tenang dulu ya, jangan terlalu emosi.",
+                        "Takut": "Gak apa-apa, semua akan baik-baik aja kok.",
+                        "Terkejut": "Kaget ya? Ada apa tuh?",
+                        "Jijik": "Ups, ada yang gak enak ya?",
+                        "Netral": "Kamu terlihat tenang, tetap seperti itu ya."
+                    }
+                    speak_async(messages.get(label, f"Kamu terlihat {label.lower()}"))
                     last_spoken_time = time.time()
                     last_label = label
                     emotion_counters[label] = 0
@@ -72,7 +85,6 @@ def gen_frames():
             cv2.putText(frame, "Wajah tidak terdeteksi", (30, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
 
-        # Kirim hasil frame ke web
         ret, buffer = cv2.imencode('.jpg', frame)
         frame_bytes = buffer.tobytes()
 
